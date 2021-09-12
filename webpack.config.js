@@ -60,8 +60,8 @@ module.exports = [
     Object.assign({}, base, {
         target: 'web',
         entry: {
-            'scratch-render': './src/index.js',
-            'scratch-render.min': './src/index.js'
+            'clipcc-render': './src/index.js',
+            'clipcc-render.min': './src/index.js'
         },
         output: {
             library: 'ClipCCRender',
@@ -77,7 +77,7 @@ module.exports = [
             'clipcc-render': './src/index.js'
         },
         output: {
-            library: 'ScratchRender',
+            library: 'ClipCCRender',
             libraryTarget: 'commonjs2',
             path: path.resolve('dist', 'node'),
             filename: '[name].js'
