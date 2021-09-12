@@ -64,7 +64,7 @@ module.exports = [
             'scratch-render.min': './src/index.js'
         },
         output: {
-            library: 'ScratchRender',
+            library: 'ClipCCRender',
             libraryTarget: 'umd',
             path: path.resolve('dist', 'web'),
             filename: '[name].js'
@@ -74,7 +74,7 @@ module.exports = [
     Object.assign({}, base, {
         target: 'node',
         entry: {
-            'scratch-render': './src/index.js'
+            'clipcc-render': './src/index.js'
         },
         output: {
             library: 'ScratchRender',

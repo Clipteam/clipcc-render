@@ -1,12 +1,9 @@
-## scratch-render
-#### WebGL-based rendering engine for Scratch 3.0
-
-[![Build Status](https://travis-ci.org/LLK/scratch-render.svg?branch=develop)](https://travis-ci.org/LLK/scratch-render)
-[![Greenkeeper badge](https://badges.greenkeeper.io/LLK/scratch-render.svg)](https://greenkeeper.io/)
+## clipcc-render
+#### WebGL-based rendering engine for ClipCC 3.0
 
 ## Installation
 ```bash
-npm install https://github.com/LLK/scratch-render.git
+yarn add https://github.com/Clipteam/clipcc-render.git
 ```
 
 ## Setup
@@ -15,7 +12,7 @@ npm install https://github.com/LLK/scratch-render.git
 <html lang="en">
     <head>
         <meta charset="UTF-8">
-        <title>Scratch WebGL rendering demo</title>
+        <title>ClipCC WebGL rendering demo</title>
     </head>
 
     <body>
@@ -30,7 +27,7 @@ var canvas = document.getElementById('myStage');
 var debug = document.getElementById('myDebug');
 
 // Instantiate the renderer
-var renderer = new require('scratch-render')(canvas);
+var renderer = new require('clipcc-render')(canvas);
 
 // Connect to debug canvas
 renderer.setDebugCanvas(debug);
@@ -49,7 +46,7 @@ renderer.connectWorker(worker);
 
 ## Standalone Build
 ```bash
-npm run build
+yarn run build
 ```
 
 ```html
@@ -64,6 +61,3 @@ npm run build
 ```bash
 npm test
 ```
-
-## Donate
-We provide [Scratch](https://scratch.mit.edu) free of charge, and want to keep it that way! Please consider making a [donation](https://secure.donationpay.org/scratchfoundation/) to support our continued engineering, design, community, and resource development efforts. Donations of any size are appreciated. Thank you!

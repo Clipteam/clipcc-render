@@ -1,10 +1,10 @@
 <body>
-    <script src="../../node_modules/scratch-vm/dist/web/scratch-vm.js"></script>
+    <script src="../../node_modules/clipcc-vm/dist/web/clipcc-vm.js"></script>
     <script src="../../node_modules/scratch-storage/dist/web/scratch-storage.js"></script>
     <script src="../../node_modules/scratch-svg-renderer/dist/web/scratch-svg-renderer.js"></script>
     <script src="../helper/page-util.js"></script>
     <!-- note: this uses the BUILT version of scratch-render!  make sure to npm run build -->
-    <script src="../../dist/web/scratch-render.js"></script>
+    <script src="../../dist/web/clipcc-render.js"></script>
 
     <canvas id="test" width="480" height="360"></canvas>
     <canvas id="cpu" width="480" height="360"></canvas>
@@ -17,7 +17,7 @@
         // Allows you easy access to debug with `vm.greenFlag()` etc.
         window.devicePixelRatio = 1;
         const gpuCanvas = document.getElementById('test');
-        var render = new ScratchRender(gpuCanvas);
+        var render = new ClipCCRender(gpuCanvas);
         var vm = initVM(render);
 
         const fileInput = document.getElementById('file');
