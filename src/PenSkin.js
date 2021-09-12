@@ -94,7 +94,9 @@ class PenSkin extends Skin {
         this._lineShader = this._renderer._shaderManager.getShader(ShaderManager.DRAW_MODE.line, NO_EFFECTS);
 
         this.onNativeSizeChanged = this.onNativeSizeChanged.bind(this);
+        this.onCanvasSizeChanged = this.onCanvasSizeChanged.bind(this);
         this._renderer.on(RenderConstants.Events.NativeSizeChanged, this.onNativeSizeChanged);
+        this._renderer.on(RenderConstants.Events.CanvasSizeChanged, this.onCanvasSizeChanged);
 
         this._setCanvasSize(renderer.getNativeSize());
     }
@@ -104,6 +106,7 @@ class PenSkin extends Skin {
      */
     dispose () {
         this._renderer.removeListener(RenderConstants.Events.NativeSizeChanged, this.onNativeSizeChanged);
+        this._renderer.removeListener(RenderConstants.Events.CanvasSizeChanged, this.onCanvasSizeChanged);
         this._renderer.gl.deleteTexture(this._texture);
         this._texture = null;
         super.dispose();
@@ -150,9 +153,10 @@ class PenSkin extends Skin {
      * @param {PenAttributes} penAttributes - how the point should be drawn.
      * @param {number} x - the X coordinate of the point to draw.
      * @param {number} y - the Y coordinate of the point to draw.
+     * @param {number} scale - the canvas scale.
      */
-    drawPoint (penAttributes, x, y) {
-        this.drawLine(penAttributes, x, y, x, y);
+    drawPoint (penAttributes, x, y, scale) {
+        this.drawLine(penAttributes, x, y, x, y, scale);
     }
 
     /**
@@ -162,17 +166,19 @@ class PenSkin extends Skin {
      * @param {number} y0 - the Y coordinate of the beginning of the line.
      * @param {number} x1 - the X coordinate of the end of the line.
      * @param {number} y1 - the Y coordinate of the end of the line.
+     * @param {number} scale - the canvas scale.
      */
-    drawLine (penAttributes, x0, y0, x1, y1) {
+    drawLine (penAttributes, x0, y0, x1, y1, scale) {
         // For compatibility with Scratch 2.0, offset pen lines of width 1 and 3 so they're pixel-aligned.
         // See https://github.com/LLK/scratch-render/pull/314
         const diameter = penAttributes.diameter || DefaultPenAttributes.diameter;
-        const offset = (diameter === 1 || diameter === 3) ? 0.5 : 0;
+        const offset = 0; //(diameter === 1 || diameter === 3) ? 0.5 : 0;
 
         this._drawLineOnBuffer(
             penAttributes,
             x0 + offset, y0 + offset,
-            x1 + offset, y1 + offset
+            x1 + offset, y1 + offset,
+            scale
         );
 
         this._silhouetteDirty = true;
@@ -194,7 +200,8 @@ class PenSkin extends Skin {
 
         const uniforms = {
             u_skin: this._texture,
-            u_stageSize: this._size
+            u_stageSize: this._size,
+            u_stageScale: this._renderer._getCanvasScale()
         };
 
         twgl.setUniforms(currentShader, uniforms);
@@ -232,8 +239,9 @@ class PenSkin extends Skin {
      * @param {number} y0 - the Y coordinate of the beginning of the line.
      * @param {number} x1 - the X coordinate of the end of the line.
      * @param {number} y1 - the Y coordinate of the end of the line.
+     * @param {number} scale - the canvas scale.
      */
-    _drawLineOnBuffer (penAttributes, x0, y0, x1, y1) {
+    _drawLineOnBuffer (penAttributes, x0, y0, x1, y1, scale) {
         const gl = this._renderer.gl;
 
         const currentShader = this._lineShader;
@@ -260,7 +268,8 @@ class PenSkin extends Skin {
             u_lineColor: __premultipliedColor,
             u_lineThickness: penAttributes.diameter || DefaultPenAttributes.diameter,
             u_lineLength: lineLength,
-            u_penPoints: [x0, -y0, lineDiffX, -lineDiffY]
+            u_penPoints: [x0, -y0, lineDiffX, -lineDiffY],
+            u_stageScale: scale
         };
 
         twgl.setUniforms(currentShader, uniforms);
@@ -279,12 +288,21 @@ class PenSkin extends Skin {
     }
 
     /**
+     * React to a change in the renderer's canvas size.
+     * @param {object} event - The change event.
+     */
+    onCanvasSizeChanged (event) {
+        this._setCanvasSize(event.newSize);
+    }
+
+    /**
      * Set the size of the pen canvas.
      * @param {Array<int>} canvasSize - the new width and height for the canvas.
      * @private
      */
     _setCanvasSize (canvasSize) {
         const [width, height] = canvasSize;
+        console.log('canvas', width, height, this._framebuffer);
 
         this._size = canvasSize;
         this._rotationCenter[0] = width / 2;
@@ -292,26 +310,25 @@ class PenSkin extends Skin {
 
         const gl = this._renderer.gl;
 
-        this._texture = twgl.createTexture(
-            gl,
-            {
+        if (this._framebuffer) {
+            const attachments = [{
+                format: gl.RGBA,
+                attachment: this._texture
+            }];
+            twgl.resizeFramebufferInfo(gl, this._framebuffer, attachments, width, height);
+        } else {
+            this._texture = twgl.createTexture(gl, {
+                auto: true,
                 mag: gl.NEAREST,
                 min: gl.NEAREST,
                 wrap: gl.CLAMP_TO_EDGE,
                 width,
                 height
-            }
-        );
-
-        const attachments = [
-            {
+            });
+            const attachments = [{
                 format: gl.RGBA,
                 attachment: this._texture
-            }
-        ];
-        if (this._framebuffer) {
-            twgl.resizeFramebufferInfo(gl, this._framebuffer, attachments, width, height);
-        } else {
+            }];
             this._framebuffer = twgl.createFramebufferInfo(gl, attachments, width, height);
         }
 
