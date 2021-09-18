@@ -93,6 +93,8 @@ class PenSkin extends Skin {
         /** @type {twgl.ProgramInfo} */
         this._lineShader = this._renderer._shaderManager.getShader(ShaderManager.DRAW_MODE.line, NO_EFFECTS);
 
+        this._textureShader = this._renderer._shaderManager.getShader(ShaderManager.DRAW_MODE.default, NO_EFFECTS);
+
         this.onNativeSizeChanged = this.onNativeSizeChanged.bind(this);
         this.onCanvasSizeChanged = this.onCanvasSizeChanged.bind(this);
         this._renderer.on(RenderConstants.Events.NativeSizeChanged, this.onNativeSizeChanged);
@@ -303,38 +305,53 @@ class PenSkin extends Skin {
      */
     _setCanvasSize (canvasSize) {
         const [width, height] = canvasSize;
-        console.log('canvas', width, height, this._framebuffer);
 
         this._size = canvasSize;
         this._rotationCenter[0] = width / 2;
         this._rotationCenter[1] = height / 2;
 
         const gl = this._renderer.gl;
+        const previousTexture = this._framebuffer ? this._texture : null;
 
-        if (this._framebuffer) {
-            const attachments = [{
-                format: gl.RGBA,
-                attachment: this._texture
-            }];
-            twgl.resizeFramebufferInfo(gl, this._framebuffer, attachments, width, height);
-        } else {
-            this._texture = twgl.createTexture(gl, {
-                auto: true,
-                mag: gl.NEAREST,
-                min: gl.NEAREST,
-                wrap: gl.CLAMP_TO_EDGE,
-                width,
-                height
-            });
-            const attachments = [{
-                format: gl.RGBA,
-                attachment: this._texture
-            }];
-            this._framebuffer = twgl.createFramebufferInfo(gl, attachments, width, height);
-        }
+        this._texture = twgl.createTexture(gl, {
+            auto: true,
+            mag: gl.NEAREST,
+            min: gl.NEAREST,
+            wrap: gl.CLAMP_TO_EDGE,
+            width,
+            height
+        });
 
+        const attachments = [{
+            format: gl.RGBA,
+            attachment: this._texture
+        }];
+
+        this._framebuffer = twgl.createFramebufferInfo(gl, attachments, width, height);
         gl.clearColor(0, 0, 0, 0);
         gl.clear(gl.COLOR_BUFFER_BIT);
+
+        // Draw previous texture to resized buffer
+        if (previousTexture) {
+            this._renderer.enterDrawRegion(this._usePenBufferDrawRegionId);
+            gl.viewport(0, 0, width, height);
+
+            const currentShader = this._textureShader;
+            gl.useProgram(currentShader.program);
+            twgl.setBuffersAndAttributes(gl, currentShader, this._renderer._bufferInfo);
+
+            const uniforms = {
+                u_skin: previousTexture,
+                u_projectionMatrix: twgl.m4.ortho(width / 2, width / -2, height / -2, height / 2, -1, 1),
+                u_modelMatrix: twgl.m4.scaling(twgl.v3.create(width, height, 0), twgl.m4.identity())
+            };
+
+            twgl.setTextureParameters(gl, previousTexture, {
+                minMag: gl.NEAREST
+            });
+            twgl.setUniforms(currentShader, uniforms);
+            twgl.drawBufferInfo(gl, this._renderer._bufferInfo, gl.TRIANGLES);
+        }
 
         this._silhouettePixels = new Uint8Array(Math.floor(width * height * 4));
         this._silhouetteImageData = new ImageData(width, height);
