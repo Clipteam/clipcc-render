@@ -97,8 +97,10 @@ class PenSkin extends Skin {
 
         this.onNativeSizeChanged = this.onNativeSizeChanged.bind(this);
         this.onCanvasSizeChanged = this.onCanvasSizeChanged.bind(this);
+        this.onQualityChanged = this.onQualityChanged.bind(this);
         this._renderer.on(RenderConstants.Events.NativeSizeChanged, this.onNativeSizeChanged);
         this._renderer.on(RenderConstants.Events.CanvasSizeChanged, this.onCanvasSizeChanged);
+        this._renderer.on(RenderConstants.Events.QualityChanged, this.onQualityChanged);
 
         this._setCanvasSize(renderer.getNativeSize());
     }
@@ -109,6 +111,7 @@ class PenSkin extends Skin {
     dispose () {
         this._renderer.removeListener(RenderConstants.Events.NativeSizeChanged, this.onNativeSizeChanged);
         this._renderer.removeListener(RenderConstants.Events.CanvasSizeChanged, this.onCanvasSizeChanged);
+        this._renderer.removeListener(RenderConstants.Events.QualityChanged, this.onQualityChanged);
         this._renderer.gl.deleteTexture(this._texture);
         this._texture = null;
         super.dispose();
@@ -288,6 +291,10 @@ class PenSkin extends Skin {
      */
     onNativeSizeChanged (event) {
         this._setCanvasSize(event.newSize);
+    }
+
+    onQualityChanged (event) {
+        this._setCanvasSize([480, 360]);
     }
 
     /**

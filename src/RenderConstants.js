@@ -30,6 +30,7 @@ module.exports = {
          * @property {Array<int>} newSize - the new size of the renderer
          */
         NativeSizeChanged: 'NativeSizeChanged',
-        CanvasSizeChanged: 'CanvasSizeChanged'
+        CanvasSizeChanged: 'CanvasSizeChanged',
+        QualityChanged: 'QualityChanged'
     }
 };
