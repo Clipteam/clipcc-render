@@ -1570,7 +1570,7 @@ class RenderWebGL extends EventEmitter {
      */
     penClear (penSkinID) {
         const skin = /** @type {PenSkin} */ this._allSkins[penSkinID];
-        skin.clear();
+        if (skin) skin.clear();
     }
 
     /**
