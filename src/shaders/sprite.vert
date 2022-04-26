@@ -2,6 +2,7 @@ precision mediump float;
 
 #ifdef DRAW_MODE_line
 uniform vec2 u_stageSize;
+uniform vec2 u_stageScale;
 uniform float u_lineThickness;
 uniform float u_lineLength;
 // The X and Y components of u_penPoints hold the first pen point. The Z and W components hold the difference between
@@ -64,7 +65,8 @@ void main() {
 	position += u_penPoints.xy;
 
 	// 4. Apply view transform
-	position *= 2.0 / u_stageSize;
+	position *= 2.0 / u_stageSize * u_stageScale;
+	//v_texCoord /= u_stageScale;
 	gl_Position = vec4(position, 0, 1);
 	#elif defined(DRAW_MODE_background)
 	gl_Position = vec4(a_position * 2.0, 0, 1);

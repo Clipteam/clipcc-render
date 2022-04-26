@@ -6,7 +6,7 @@
     <!-- note: this uses the BUILT version of scratch-render!  make sure to npm run build -->
     <script src="../../dist/web/clipcc-render.js"></script>
 
-    <canvas id="test" width="480" height="360" style="width: 480px"></canvas>
+    <canvas id="test" width="480" height="360"></canvas>
     <input type="file" id="file" name="file">
 
     <script>
@@ -24,5 +24,6 @@
         });
 
         const loadFile = loadFileInputIntoVM.bind(null, document.getElementById('file'), vm, render);
+        document.getElementById('file').addEventListener('change', loadFile);
     </script>
 </body>
