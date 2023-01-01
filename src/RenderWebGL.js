@@ -194,6 +194,9 @@ class RenderWebGL extends EventEmitter {
         /** @type {function} */
         this._exitRegion = null;
 
+        /** @type {boolean} */
+        this._useHighQualityPen = false;
+
         /** @type {object} */
         this._backgroundDrawRegionId = {
             enter: () => this._enterDrawBackground(),
@@ -251,6 +254,10 @@ class RenderWebGL extends EventEmitter {
         const newWidth = pixelsWide * pixelRatio;
         const newHeight = pixelsTall * pixelRatio;
 
+        if (this._useHighQualityPen) {
+            this.emit(RenderConstants.Events.CanvasSizeChanged, {newSize: [newWidth, newHeight]});
+        } else this.emit(RenderConstants.Events.CanvasSizeChanged, {newSize: [480, 360]});
+
         // Certain operations, such as moving the color picker, call `resize` once per frame, even though the canvas
         // size doesn't change. To avoid unnecessary canvas updates, check that we *really* need to resize the canvas.
         if (canvas.width !== newWidth || canvas.height !== newHeight) {
@@ -259,7 +266,6 @@ class RenderWebGL extends EventEmitter {
             // Resizing the canvas causes it to be cleared, so redraw it.
             this.draw();
         }
-
     }
 
     /**
@@ -314,6 +320,15 @@ class RenderWebGL extends EventEmitter {
         this._projection = twgl.m4.ortho(xLeft, xRight, yBottom, yTop, -1, 1);
 
         this._setNativeSize(Math.abs(xRight - xLeft), Math.abs(yBottom - yTop));
+    }
+
+    /**
+     * Set whether use High-Quality Pen.
+     * @param {boolean} useHighQualityPen - true to use High-Quality Pen.
+     */
+    setUseHighQualityPen (useHighQualityPen) {
+        this._useHighQualityPen = useHighQualityPen;
+        this.emit(RenderConstants.Events.QualityChanged, useHighQualityPen);
     }
 
     /**
@@ -1562,7 +1577,19 @@ class RenderWebGL extends EventEmitter {
      */
     penClear (penSkinID) {
         const skin = /** @type {PenSkin} */ this._allSkins[penSkinID];
-        skin.clear();
+        if (skin) skin.clear();
+    }
+
+    /**
+     * Get canvas scale.
+     * @returns {number[]} - the canvas scale.
+     */
+    _getCanvasScale () {
+        if (!this._useHighQualityPen) return [1, 1];
+        return [
+            this._gl.canvas.width / this._nativeSize[0],
+            this._gl.canvas.height / this._nativeSize[1]
+        ];
     }
 
     /**
@@ -1574,7 +1601,7 @@ class RenderWebGL extends EventEmitter {
      */
     penPoint (penSkinID, penAttributes, x, y) {
         const skin = /** @type {PenSkin} */ this._allSkins[penSkinID];
-        skin.drawPoint(penAttributes, x, y);
+        skin.drawPoint(penAttributes, x, y, this._getCanvasScale());
     }
 
     /**
@@ -1588,7 +1615,7 @@ class RenderWebGL extends EventEmitter {
      */
     penLine (penSkinID, penAttributes, x0, y0, x1, y1) {
         const skin = /** @type {PenSkin} */ this._allSkins[penSkinID];
-        skin.drawLine(penAttributes, x0, y0, x1, y1);
+        skin.drawLine(penAttributes, x0, y0, x1, y1, this._getCanvasScale());
     }
 
     /**
@@ -1611,20 +1638,26 @@ class RenderWebGL extends EventEmitter {
 
         const skin = /** @type {PenSkin} */ this._allSkins[penSkinID];
 
+        const scale = this._getCanvasScale();
+
         const gl = this._gl;
         twgl.bindFramebufferInfo(gl, skin._framebuffer);
 
         // Limit size of viewport to the bounds around the stamp Drawable and create the projection matrix for the draw.
         gl.viewport(
-            (this._nativeSize[0] * 0.5) + bounds.left,
-            (this._nativeSize[1] * 0.5) - bounds.top,
-            bounds.width,
-            bounds.height
+            ((this._nativeSize[0] * 0.5) + bounds.left) * scale[0],
+            ((this._nativeSize[1] * 0.5) - bounds.top) * scale[1],
+            bounds.width * scale[0],
+            bounds.height * scale[1]
         );
         const projection = twgl.m4.ortho(bounds.left, bounds.right, bounds.top, bounds.bottom, -1, 1);
 
         // Draw the stamped sprite onto the PenSkin's framebuffer.
-        this._drawThese([stampID], ShaderManager.DRAW_MODE.default, projection, {ignoreVisibility: true});
+        this._drawThese([stampID], ShaderManager.DRAW_MODE.default, projection, {
+            ignoreVisibility: true,
+            framebufferWidth: /* this._nativeSize[0] * scale[0],*/ gl.canvas.width,
+            framebufferHeight: /* this._nativeSize[1] * scale[1]*/ gl.canvas.height
+        });
         skin._silhouetteDirty = true;
     }
 
